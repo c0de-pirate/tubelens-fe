@@ -1,3 +1,7 @@
+# tubelens-fe
+
+유튜브 분석 대시보드 tubelens의 프론트엔드 repo
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
