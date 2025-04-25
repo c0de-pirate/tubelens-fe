@@ -2,6 +2,15 @@
 
 유튜브 분석 대시보드 tubelens의 프론트엔드 repo
 
+# 실행 방법
+
+프로젝트 루트 디렉토리에서
+
+```
+npm i
+npm run dev
+```
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
