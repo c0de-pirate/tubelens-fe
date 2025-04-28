@@ -2,10 +2,14 @@ import axios from "axios";
 
 export const getVideoData = async (videoId) => {
   try {
+    console.log('getVideoData 호출됨', videoId);
     const [videoResponse, recommendResponse] = await Promise.all([
-      axios.get(`http://localhost:8080/videos?videoId=${videoId}`),
-      axios.get(`http://localhost:8080/videos/recomm?videoId=${videoId}`),
+      axios.get(`/videos?videoId=${videoId}`),
+      axios.get(`/videos/recomm?videoId=${videoId}`),
     ]);
+
+    console.log('videoResponse.data:', videoResponse.data);
+    console.log('recommendResponse.data:', recommendResponse.data);
 
     return {
       ...videoResponse.data,

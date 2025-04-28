@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import SearchBar from '../../components/SearchBar';
 import styled from 'styled-components';
 
@@ -93,6 +93,7 @@ const NoResults = styled.div`
 const SearchPage = () => {
   const { keyword } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const [videos, setVideos] = useState(location.state?.searchResults || []);
   const [loading, setLoading] = useState(!location.state?.searchResults);
   const [error, setError] = useState(null);
@@ -157,6 +158,10 @@ const SearchPage = () => {
     return `${count} 조회수`;
   };
 
+  const handleVideoClick = (videoId) => {
+    navigate(`/video/${videoId}`);
+  };
+
   return (
     <SearchPageContainer>
       <SearchBar initialQuery={searchQuery} />
@@ -170,7 +175,10 @@ const SearchPage = () => {
         {!loading && !error && videos.length > 0 && (
           <VideoGrid>
             {videos.map((video) => (
-              <VideoCard key={video.id}>
+              <VideoCard 
+                key={video.id}
+                onClick={() => handleVideoClick(video.id)}
+              >
                 <Thumbnail 
                   src={video.thumbnails} 
                   alt={video.title} 
