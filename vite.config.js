@@ -4,13 +4,6 @@ import react from "@vitejs/plugin-react-swc";
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 3000,
-    proxy: {
-      "/api": {
-        target: "http://localhost:8000", // 백엔드 서버 주소
-        changeOrigin: true,
-        secure: false,
-      },
-    },
+    port: 3000
   },
 });
