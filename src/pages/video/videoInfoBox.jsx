@@ -1,20 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { getVideoData } from './hook';
 import SearchBar from '../../components/SearchBar';
 
 const VideoInfoBox = () => {
   const { videoId } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [videoInfo, setVideoInfo] = useState(null);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  console.log('VideoInfoBox received videoId:', videoId);
 
   useEffect(() => {
     const fetchVideoData = async () => {
-      if (!videoId) return;
-      
+      console.log('VideoInfoBox received videoId:', videoId);
+      if (!videoId) {
+        return;
+      }
       setIsLoading(true);
       try {
         const data = await getVideoData(videoId);
@@ -27,10 +30,15 @@ const VideoInfoBox = () => {
     };
 
     fetchVideoData();
-  }, [videoId]);
+  }, [videoId, navigate, location]);
 
   const getFirstLine = (text) => {
     return text ? text.split('\n')[0] : '';
+  };
+
+  const handleVideoClick = (newVideoId) => {
+    console.log('handleVideoClick 호출됨', newVideoId);
+    navigate(`/video/${newVideoId}`);
   };
 
   return (
@@ -90,7 +98,14 @@ const VideoInfoBox = () => {
             <div className="text-center text-gray-500 py-4">로딩 중...</div>
           ) : videoInfo?.relatedVideos && videoInfo.relatedVideos.length > 0 ? (
             videoInfo.relatedVideos.map((video, index) => (
-              <div key={index} className="flex gap-4 p-2 hover:bg-gray-100 rounded-lg cursor-pointer">
+              <div 
+                key={index} 
+                className="flex gap-4 p-2 hover:bg-gray-100 rounded-lg cursor-pointer"
+                onClick={() => {
+                  // console.log('Clicked video:', video)
+                  handleVideoClick(video.id)
+                }}
+              >
                 <div className="w-[168px] h-[94px] bg-gray-200 rounded-lg overflow-hidden">
                   <img src={video.thumbnails} alt={video.title} className="w-full h-full object-cover" />
                 </div>
@@ -98,6 +113,7 @@ const VideoInfoBox = () => {
                   <h3 className="font-medium line-clamp-2">{video.title}</h3>
                   <p className="text-sm text-gray-600 mt-1">{video.channelTitle}</p>
                   <p className="text-sm text-gray-500 mt-1">
+                    {video.videoId}
                     조회수 {video.viewCount >= 10000 ? `${Math.floor(video.viewCount / 10000)}만` : video.viewCount}회
                   </p>
                 </div>
