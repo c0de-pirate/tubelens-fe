@@ -155,7 +155,7 @@ const SearchBar = ({ initialQuery = '' }) => {
     setIsLoading(true);
     try {
       console.log('검색어:', searchQuery);
-      const response = await fetch(`http://localhost:8080/youtube/suggestion?keyword=${searchQuery}`);
+      const response = await fetch(`http://localhost:80/api/youtube/suggestion?keyword=${searchQuery}`);
       console.log('API 응답 상태:', response.status);
       
       if (!response.ok) {
@@ -240,7 +240,7 @@ const SearchBar = ({ initialQuery = '' }) => {
     const [input, keywords] = suggestion.split(' ');
     
     try {
-      const url = `http://localhost:8080/youtube/suggested/structured?input=${input}&keywords=${keywords}`;
+      const url = `http://localhost:80/api/youtube/suggested/structured?input=${input}&keywords=${keywords}`;
       console.log('API 요청 URL:', url);
       
       const response = await fetch(url);
@@ -275,9 +275,9 @@ const SearchBar = ({ initialQuery = '' }) => {
         if (words.length >= 2) {
           input = words[0];
           keywords = words.slice(1).join(' ');
-          url = `http://localhost:8080/youtube/suggested/structured?input=${input}&keywords=${keywords}`;
+          url = `http://localhost:80/api/youtube/suggested/structured?input=${input}&keywords=${keywords}`;
         } else {
-          url = `http://localhost:8080/youtube/search?keyword=${searchQuery.trim()}`;
+          url = `http://localhost:80/api/youtube/search?keyword=${searchQuery.trim()}`;
         }
         
         console.log('검색 실행:', searchQuery);
