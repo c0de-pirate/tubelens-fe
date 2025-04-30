@@ -6,16 +6,17 @@ import { fetchUserInfo } from '../utils/api';
 // 서버 설정을 한 곳에서 관리
 const SERVER_CONFIG = {
   host: 'localhost',
-  port: 8080,
+  port: 80,
   baseURL: function() {
     return `http://${this.host}:${this.port}`;
   }
 };
 
 function Header() {
-  const [loginStatus, setLoginStatus] = useState(null);
+  const hasToken = localStorage.getItem('token') !== null;
+  const [loginStatus, setLoginStatus] = useState(hasToken ? '확인 중' : null);
   const [userInfo, setUserInfo] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(hasToken);
   const [isLoginChecked, setIsLoginChecked] = useState(false);
 
   const handleGoogleLogin = () => {
@@ -100,7 +101,9 @@ function Header() {
       </div>
       {/* 오른쪽: 로그인 버튼 또는 사용자 정보 */}
       <div className="ml-8">
-        {loginStatus === '성공' && userInfo ? (
+        {loading ? (
+          <div className="h-10 w-[120px] opacity-0"></div>
+        ) : loginStatus === '성공' && userInfo ? (
           <div className="flex items-center gap-4">
             <span className="text-sm font-medium">{userInfo.name}님 안녕하세요!</span>
             <button 
