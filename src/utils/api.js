@@ -54,6 +54,15 @@ export const fetchUserInfo = () => {
     return api.get('/api/user/me');
   };
 
-// 다른 API 호출 함수들...
+// 트렌딩 비디오 조회 함수 추가
+export const fetchTrendingVideos = (sortBy, period, limit = 10) => {
+    const endpoint = sortBy === 'views' ? '/videos/trending/views' : '/videos/trending/likes';
+    return api.get(endpoint, {
+      params: {
+        limit,
+        period
+      }
+    });
+  };
 
 export default api;
