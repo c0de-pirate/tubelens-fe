@@ -4,8 +4,7 @@ import { refreshAccessToken } from './auth';
 
 // axios 인스턴스 생성
 const api = axios.create({
-  baseURL: 'http://localhost:8080',
-  withCredentials: true
+  baseURL: 'http://localhost:8080'
 });
 
 // 요청 인터셉터 설정
@@ -54,21 +53,6 @@ export const fetchUserInfo = () => {
     console.log("fetchUserInfo 호출됨, 토큰:", localStorage.getItem('token'));
     return api.get('/api/user/me');
   };
-
-export const fetchRefresh = () => {
-  const refreshToken = localStorage.getItem('refreshToken');
-  if (!refreshToken) {
-    return Promise.reject(new Error('인증 토큰이 없습니다'));
-  }
-
-  return api.post('/refresh', {}, {
-    headers: {
-      'Content-Type': 'application/json',
-      'refreshToken': refreshToken
-    },
-    withCredentials: true
-  });
-};
 
 // 다른 API 호출 함수들...
 
