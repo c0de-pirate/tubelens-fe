@@ -4,7 +4,8 @@ import { refreshAccessToken } from './auth';
 
 // axios 인스턴스 생성
 const api = axios.create({
-  baseURL: 'http://localhost:8080'
+  baseURL: 'http://localhost:8080',
+  withCredentials: true
 });
 
 // 요청 인터셉터 설정
@@ -54,6 +55,7 @@ export const fetchUserInfo = () => {
     return api.get('/api/user/me');
   };
 
+
 // 트렌딩 비디오 조회 함수 추가
 export const fetchTrendingVideos = (sortBy, period, limit = 10) => {
     const endpoint = sortBy === 'views' ? '/videos/trending/views' : '/videos/trending/likes';
@@ -64,5 +66,20 @@ export const fetchTrendingVideos = (sortBy, period, limit = 10) => {
       }
     });
   };
+
+export const fetchRefresh = () => {
+  const refreshToken = localStorage.getItem('refreshToken');
+  if (!refreshToken) {
+    return Promise.reject(new Error('인증 토큰이 없습니다'));
+  }
+
+  return api.post('/refresh', {}, {
+    headers: {
+      'Content-Type': 'application/json',
+      'refreshToken': refreshToken
+    },
+    withCredentials: true
+  });
+};
 
 export default api;
