@@ -2,15 +2,23 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import cloud from 'd3-cloud';
 import Header from '../../components/header';
-import { fetchRefresh } from '../../utils/api';
+import axios from 'axios';
+
+// // API 클라이언트 생성 - 주석을 제거하고 실제로 사용하도록 설정
+const api = axios.create({
+  baseURL: '/api', // 프록시 설정에 따라 조정 가능
+  timeout: 10000
+});
 
 // 도넛차트 컴포넌트
-function DonutChart({ data, width = 180, height = 180 }) {
+function DonutChart({ data, width = 180, height = 180, onSectionClick }) {
   const ref = useRef();
   const [hoverIdx, setHoverIdx] = useState(null);
   const palette = [
-    '#6C63FF', '#00C9A7', '#FFD166', '#FF6B6B', '#43B0F1',
-    '#A3C6BD', '#E2B5E8', '#4B6CFA', '#D9D9D9',
+    '#D9D9D9', // 기타
+    '#4B6CFA', // 검색어
+    '#E2B5E8', // 업무 분야
+    '#A3C6BD', // 활동 분야
   ];
 
   useEffect(() => {
@@ -29,13 +37,14 @@ function DonutChart({ data, width = 180, height = 180 }) {
       .enter()
       .append('path')
       .attr('d', (d, i) => hoverIdx === i ? arcHover(d) : arc(d))
-      .attr('fill', (d, i) => palette[i % palette.length])
+      .attr('fill', (d, i) => data[i].color)
       .attr('stroke', '#fff')
       .attr('stroke-width', 4)
       .style('filter', (d, i) => hoverIdx === i ? 'drop-shadow(0 4px 16px #0002)' : 'none')
       .style('cursor', 'pointer')
       .on('mouseenter', (e, d, i) => setHoverIdx(i))
-      .on('mouseleave', () => setHoverIdx(null));
+      .on('mouseleave', () => setHoverIdx(null))
+      .on('click', (e, d) => onSectionClick(d.data.label));
     const total = data.reduce((sum, d) => sum + d.value, 0);
     g.append('text')
       .attr('text-anchor', 'middle')
@@ -51,7 +60,7 @@ function DonutChart({ data, width = 180, height = 180 }) {
       .attr('font-size', 15)
       .attr('fill', '#888')
       .text('유입경로');
-  }, [data, width, height, hoverIdx]);
+  }, [data, width, height, hoverIdx, onSectionClick]);
 
   return <svg ref={ref} style={{ display: 'block' }}></svg>;
 }
@@ -63,9 +72,10 @@ export default function Mypage() {
   const [wordCloudData, setWordCloudData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hoveredIdx, setHoveredIdx] = useState(null);
+  const [selectedCondition, setSelectedCondition] = useState(null);
   const [channelId, setChannelId] = useState('');
   const [userName, setUserName] = useState('');
-  // 도넛차트 데이터 - 백엔드에서 받아오도록 변경 예정
+  // 도넛차트 데이터
   const [inflowData, setInflowData] = useState([
     { label: '기타', value: 20, color: '#D9D9D9' },
     { label: '검색어', value: 50, color: '#4B6CFA' },
@@ -73,27 +83,75 @@ export default function Mypage() {
     { label: '활동 분야', value: 10, color: '#A3C6BD' },
   ]);
 
-  // 태그 데이터 가져오기
-  const fetchTags = async (cid) => {
-    if (!cid) {
-      setLoading(false);
-      return;
+  const handleDonutSectionClick = (label) => {
+    setSelectedCondition(label);
+  };
+
+  // 인증 헤더 생성 함수
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    const refreshToken = localStorage.getItem('refreshToken');
+    
+    if (!token || !refreshToken) {
+      console.error('토큰이 없습니다');
+      return null;
     }
+    
+    return {
+      'Authorization': `Bearer ${token}`,
+      'refreshToken': refreshToken
+    };
+  };
+
+  // 태그 데이터 가져오기
+  const fetchTags = async () => {
+    setLoading(true);
 
     try {
-      const response = await api.get(`/${cid}`);
+      // 인증 헤더 가져오기
+      const headers = getAuthHeaders();
+      console.log(headers);
+      
+      if (!headers) {
+        setLoading(false);
+        return;
+      }
 
-      // TagDto 형식을 워드클라우드 데이터 형식으로 변환
-      // TagDto: { text: string, count: number } => WordCloud: { text: string, size: number }
-      const wordCloudData = response.data.map(tag => ({
-        text: tag.text,
-        size: tag.count
-      }));
+      // 백엔드 API 호출
+      const response = await api.get('http://localhost/api/mypage', { headers });
+      console.log('태그 데이터 응답:', response.data);
 
-      setWordCloudData(wordCloudData);
+      // 응답 데이터 처리
+      if (Array.isArray(response.data)) {
+        setWordCloudData(response.data);
+      } else {
+        console.error('응답 데이터 형식이 예상과 다릅니다:', response.data);
+        setWordCloudData([]);
+      }
+      
       setCloudKey(prev => prev + 1);
+      
+      // 채널 ID가 있는 경우 저장
+      if (response.data.channelId) {
+        setChannelId(response.data.channelId);
+        
+        // 로컬 스토리지 유저 정보 업데이트
+        const userInfo = JSON.parse(localStorage.getItem('userInfo')) || {};
+        userInfo.channel_id = response.data.channelId;
+        localStorage.setItem('userInfo', JSON.stringify(userInfo));
+      }
     } catch (error) {
       console.error('태그 데이터 가져오기 실패:', error);
+      
+      // 상세 오류 정보 로깅
+      if (error.response) {
+        console.error('응답 오류:', error.response.status, error.response.data);
+      } else if (error.request) {
+        console.error('요청 오류:', error.request);
+      } else {
+        console.error('기타 오류:', error.message);
+      }
+      
       alert('태그 데이터를 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
@@ -104,18 +162,31 @@ export default function Mypage() {
   const handleRefreshWordCloud = async () => {
     setLoading(true);
     try {
-      const response = await fetchRefresh();
+      // 인증 헤더 가져오기
+      const headers = getAuthHeaders();
       
-      // API 응답 데이터를 워드클라우드 형식으로 변환
-      const wordCloudData = response.data.map(tag => ({
-        text: tag.text,  // 태그 이름
-        size: tag.size   // 태그 크기
-      }));
+      if (!headers) {
+        setLoading(false);
+        return;
+      }
+
+      // 서버에서 태그 데이터 새로고침 호출
+      await api.post('http://localhost/api/mypage/refresh', {}, { headers });
       
-      setWordCloudData(wordCloudData);
-      setCloudKey(k => k + 1); // 워드클라우드 강제 리렌더링
-    } catch (e) {
-      console.error('워드클라우드 새로고침 실패:', e);
+      // 새로운 태그 데이터 가져오기
+      await fetchTags();
+    } catch (error) {
+      console.error('워드클라우드 새로고침 실패:', error);
+      
+      // 상세 오류 정보 로깅
+      if (error.response) {
+        console.error('응답 오류:', error.response.status, error.response.data);
+      } else if (error.request) {
+        console.error('요청 오류:', error.request);
+      } else {
+        console.error('기타 오류:', error.message);
+      }
+      
       alert('워드클라우드 새로고침 실패');
     } finally {
       setLoading(false);
@@ -124,7 +195,13 @@ export default function Mypage() {
 
   // 컴포넌트 마운트 시 초기 데이터 로드
   useEffect(() => {
-    handleRefreshWordCloud();
+    // 사용자 정보 가져오기
+    const userInfo = JSON.parse(localStorage.getItem('userInfo')) || {};
+    if (userInfo.name) {
+      setUserName(userInfo.name);
+    }
+    
+    fetchTags();
   }, []);
 
   // 워드클라우드 렌더링
@@ -137,13 +214,23 @@ export default function Mypage() {
       .attr('width', width)
       .attr('height', height);
     svg.selectAll('*').remove();
+    
+    // 최대 크기 계산
+    const maxSize = Math.max(...wordCloudData.map(d => d.size));
+    // 최소 크기 설정
+    const minSize = 20;
+    
     const layout = cloud()
       .size([width, height])
-      .words(wordCloudData.map(d => ({ text: d.text, size: d.size })))
+      .words(wordCloudData.map(d => ({ 
+        text: d.text, 
+        size: Math.max(minSize, (d.size / maxSize) * 60) // 크기 조정: 최소 20px, 최대 60px
+      })))
       .padding(5)
       .rotate(() => Math.random() < 0.5 ? 0 : 90)
-      .font('Impact')
+      .font('Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif')
       .fontSize(d => d.size)
+      .fontWeight(700)
       .on('end', draw);
     layout.start();
     function draw(words) {
@@ -154,7 +241,8 @@ export default function Mypage() {
         .enter()
         .append('text')
         .style('font-size', d => `${d.size}px`)
-        .style('font-family', 'Impact')
+        .style('font-family', 'Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif')
+        .style('font-weight', '700')
         .style('fill', (d, i) => d3.schemeCategory10[i % 10])
         .attr('text-anchor', 'middle')
         .attr('transform', d => `translate(${d.x},${d.y})rotate(${d.rotate})`)
@@ -164,6 +252,9 @@ export default function Mypage() {
   }, [cloudKey, wordCloudData]);
 
   const maxSize = wordCloudData.length > 0 ? Math.max(...wordCloudData.map(d => d.size)) : 0;
+  // 크기 순서대로 정렬
+  const sortedWordCloudData = [...wordCloudData].sort((a, b) => b.size - a.size);
+  
   const getBarStyle = (idx, widthPercent, hovered) => ({
     width: `${widthPercent}%`,
     height: '100%',
@@ -183,7 +274,7 @@ export default function Mypage() {
     <div>
       <Header />
       <div style={{ padding: '20px' }}>
-        <h1>마이페이지 - {userName}</h1>
+        <h1>{userName}</h1>
         {/* 1행: 도넛차트 + 검색조건 */}
         <div style={{
           display: 'flex',
@@ -198,14 +289,32 @@ export default function Mypage() {
         }}>
           {/* 도넛차트 */}
           <div style={{ minWidth: 150, width: 300, height: 300, display: 'flex', justifyContent: 'center', alignItems: 'center', marginLeft: 50 }}>
-            <DonutChart data={inflowData} width={300} height={300} />
+            <DonutChart 
+              data={inflowData} 
+              width={300} 
+              height={300} 
+              onSectionClick={handleDonutSectionClick}
+            />
           </div>
           {/* 검색조건(범례) */}
           <div style={{ width: 400, height: 300, background: '#fff', borderRadius: 12, padding: 24, boxShadow: '0 1px 4px #0001', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
             <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 24 }}>검색 조건</h2>
             <div style={{ flex: 1, overflowY: 'auto', paddingTop: 8 }}>
               {inflowData.map((item, idx) => (
-                <div key={item.label} style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+                <div 
+                  key={item.label} 
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    marginBottom: 12,
+                    cursor: 'pointer',
+                    background: selectedCondition === item.label ? '#f5f6fa' : 'transparent',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    transition: 'background 0.2s'
+                  }}
+                  onClick={() => setSelectedCondition(item.label)}
+                >
                   <span style={{ display: 'inline-block', width: 14, height: 14, borderRadius: 4, background: item.color, marginRight: 12 }}></span>
                   <span style={{ color: '#222', fontWeight: 500, fontSize: 16 }}>{item.label}</span>
                   <span style={{ marginLeft: 'auto', color: '#888', fontWeight: 500 }}>{item.value}%</span>
@@ -321,7 +430,7 @@ export default function Mypage() {
             <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 24 }}>단어 빈도(크기)</h2>
             <div style={{ flex: 1, overflowY: 'auto', paddingTop: 8 }}>
               {wordCloudData.length > 0 ? (
-                wordCloudData.map((item, idx) => {
+                sortedWordCloudData.map((item, idx) => {
                   const widthPercent = maxSize > 0 ? (item.size / maxSize) * 100 : 0;
                   const hovered = hoveredIdx === idx;
                   return (
