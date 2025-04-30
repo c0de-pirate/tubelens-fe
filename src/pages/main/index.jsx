@@ -1,5 +1,4 @@
 import Header from "../../components/header";
-import SearchBar from "../../components/SearchBar";
 import heroImg from "../../assets/hero.png";
 import { useEffect, useLayoutEffect, useState } from "react";
 
@@ -51,9 +50,8 @@ export default function Main() {
         }}
       >
         <div className="pt-72 pb-8 w-full flex flex-col items-center">
-          <SearchBar />
           {/* 임시 검색창 */}
-          {/* <div className="w-full max-w-6xl bg-white rounded-full shadow flex items-center px-4 py-5 mb-4 mt-2">
+          <div className="w-full max-w-6xl bg-white rounded-full shadow flex items-center px-4 py-5 mb-4 mt-2">
             <input
               type="text"
               className="flex-1 bg-transparent outline-none text-lg text-gray-800 pl-8"
@@ -64,7 +62,7 @@ export default function Main() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z" />
               </svg>
             </button>
-          </div> */}
+          </div>
           <div className="w-full max-w-6xl mb-4 ml-2">
             <div
               className={`text-6xl font-extrabold text-left leading-tight drop-shadow-lg transition-all duration-700 ${showText ? 'translate-x-0 opacity-100' : '-translate-x-20 opacity-0'}`}
