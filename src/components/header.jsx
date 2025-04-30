@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import logo from "../assets/mainlogo.png";
-import { fetchUserInfo } from '../utils/api';
+import { fetchUserInfo, fetchTrendingVideos as fetchTrendingVideosAPI } from '../utils/api';
 
 // 서버 설정을 한 곳에서 관리
 const SERVER_CONFIG = {
@@ -17,6 +17,10 @@ function Header() {
   const [userInfo, setUserInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isLoginChecked, setIsLoginChecked] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [trendingVideos, setTrendingVideos] = useState([]);
+  const [sortBy, setSortBy] = useState('views');
+  const [onlyToday, setOnlyToday] = useState(true);
 
   const handleGoogleLogin = () => {
     window.location.href = `${SERVER_CONFIG.baseURL()}/oauth2/authorization/google`;
@@ -62,6 +66,37 @@ function Header() {
       setIsLoginChecked(true); // 로그인 체크 완료 표시 추가
     }
   };
+
+  const loadTrendingVideos = async () => {
+    try {
+      const period = onlyToday ? 'today' : '';
+      const response = await fetchTrendingVideosAPI(sortBy, period, 10);
+      setTrendingVideos(response.data);
+    } catch (error) {
+      console.error("인기 동영상 가져오기 실패:", error);
+    }
+  };
+  
+  const toggleDropdown = () => {
+    if (!showDropdown) {
+      loadTrendingVideos();
+    }
+    setShowDropdown(!showDropdown);
+  };
+  
+  const handleSortChange = (e) => {
+    setSortBy(e.target.value);
+    if (showDropdown) {
+      setTimeout(() => loadTrendingVideos(), 0);
+    }
+  };
+  
+  const handleTodayFilterChange = (e) => {
+    setOnlyToday(e.target.checked);
+    if (showDropdown) {
+      setTimeout(() => loadTrendingVideos(), 0);
+    }
+  };
   
   useEffect(() => {
     // 이미 로그인 체크를 했다면 다시 실행하지 않음
@@ -81,6 +116,21 @@ function Header() {
     checkLoginStatus();
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      const dropdownElement = document.getElementById('trending-dropdown');
+      if (dropdownElement && !dropdownElement.contains(event.target) && 
+          !event.target.closest('button')?.textContent?.includes('인기 급상승 영상')) {
+        setShowDropdown(false);
+      }
+    };
+  
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showDropdown]);
+
 
   return (
     <header className="w-full flex items-center justify-between px-6 py-2 bg-white shadow-lg z-10">
@@ -89,8 +139,96 @@ function Header() {
         <img src={logo} alt="TubeLens Logo" className="w-14 h-14" />
       </Link>
       {/* 가운데: 버튼 2개 */}
-      <div className="flex items-center gap-4 ml-auto mr-8">
-        <button className="text-base font-medium text-black hover:text-blue-600 focus:outline-none">인기 급상승 영상 <span className="inline-block">🔼</span></button>
+      <div className="flex items-center gap-4 ml-auto mr-8 relative">
+        <button 
+          className="text-base font-medium text-black hover:text-blue-600 focus:outline-none"
+          onClick={toggleDropdown}
+        >
+          인기 급상승 영상 <span className="inline-block">🔼</span>
+        </button>
+        
+        {/* 드롭다운 메뉴 */}
+        {showDropdown && (
+          <div id="trending-dropdown" className="absolute top-full left-0 mt-2 w-96 bg-white rounded-md shadow-lg z-50 p-4">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-1">
+                  <input
+                    type="radio"
+                    id="views"
+                    name="sortBy"
+                    value="views"
+                    checked={sortBy === 'views'}
+                    onChange={handleSortChange}
+                    className="cursor-pointer"
+                  />
+                  <label htmlFor="views" className="text-sm cursor-pointer">조회수</label>
+                </div>
+                <div className="flex items-center gap-1">
+                  <input
+                    type="radio"
+                    id="likes"
+                    name="sortBy"
+                    value="likes"
+                    checked={sortBy === 'likes'}
+                    onChange={handleSortChange} 
+                    className="cursor-pointer"
+                  />
+                  <label htmlFor="likes" className="text-sm cursor-pointer">좋아요</label>
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                <input
+                  type="checkbox"
+                  id="onlyToday"
+                  checked={onlyToday}
+                  onChange={handleTodayFilterChange}
+                  className="cursor-pointer"
+                />
+                <label htmlFor="onlyToday" className="text-sm cursor-pointer">오늘 데이터만</label>
+              </div>
+            </div>
+            
+            <div className="max-h-80 overflow-y-auto">
+              <table className="w-full">
+                <thead className="border-b">
+                  <tr>
+                    <th className="text-left py-2 px-2 w-10">#</th>
+                    <th className="text-left py-2 px-2">영상 제목</th>
+                    <th className="text-right py-2 px-2">
+                      {sortBy === 'views' ? '조회수' : '좋아요'}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {trendingVideos.map((video, index) => (
+                    <tr key={video.id} className="hover:bg-gray-50">
+                      <td className="py-2 px-2">{index + 1}</td>
+                      <td className="py-2 px-2">
+                        <Link 
+                          to={`/video/${video.id}`} 
+                          className="text-blue-600 hover:underline"
+                        >
+                          {video.title}
+                        </Link>
+                      </td>
+                      <td className="text-right py-2 px-2">
+                        {sortBy === 'views' 
+                          ? video.viewCount.toLocaleString() 
+                          : video.likeCount.toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                  {trendingVideos.length === 0 && (
+                    <tr>
+                      <td colSpan="3" className="text-center py-4">데이터를 불러오는 중입니다...</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
         {loginStatus === '성공' && userInfo && (
           <>
             <span className="mx-2 text-gray-300 text-xl">|</span>
