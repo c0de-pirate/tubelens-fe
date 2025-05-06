@@ -10,6 +10,25 @@ const api = axios.create({
   timeout: 10000
 });
 
+// 1. 라벨/색상 정의
+const FUNNEL_LABELS = {
+  ext_URL: "외부 링크 클릭률",
+  yt_SEARCH: "유튜브 클릭률",
+  related_VIDEO: "관련 동영상 유입률",
+  playlist: "재생목록 유입률",
+  subscriber: "구독자 유입률",
+  channel: "채널 페이지 유입률",
+  notification: "알림 클릭 유입률",
+  advertising: "광고 유입률",
+  etc: "기타"
+};
+const FUNNEL_KEYS = [
+  "ext_URL", "yt_SEARCH", "related_VIDEO", "playlist", "subscriber", "channel", "notification", "advertising", "etc"
+];
+const FUNNEL_COLORS = [
+  "#60A5FA", "#6366F1", "#34D399", "#F59E42", "#F472B6", "#A78BFA", "#F87171", "#FBBF24", "#D1D5DB"
+];
+
 // 도넛차트 컴포넌트
 function DonutChart({ data, width = 180, height = 180, onSectionClick }) {
   const ref = useRef();
@@ -76,12 +95,14 @@ export default function Mypage() {
   const [channelId, setChannelId] = useState('');
   const [userName, setUserName] = useState('');
   // 도넛차트 데이터
-  const [inflowData, setInflowData] = useState([
-    { label: '기타', value: 20, color: '#D9D9D9' },
-    { label: '검색어', value: 50, color: '#4B6CFA' },
-    { label: '업무 분야', value: 20, color: '#E2B5E8' },
-    { label: '활동 분야', value: 10, color: '#A3C6BD' },
-  ]);
+  const [funnelData, setFunnelData] = useState(
+    FUNNEL_KEYS.map((key, idx) => ({
+      key,
+      label: FUNNEL_LABELS[key],
+      value: 0,
+      color: FUNNEL_COLORS[idx]
+    }))
+  );
 
   const handleDonutSectionClick = (label) => {
     setSelectedCondition(label);
@@ -290,7 +311,7 @@ export default function Mypage() {
           {/* 도넛차트 */}
           <div style={{ minWidth: 150, width: 300, height: 300, display: 'flex', justifyContent: 'center', alignItems: 'center', marginLeft: 50 }}>
             <DonutChart 
-              data={inflowData} 
+              data={funnelData} 
               width={300} 
               height={300} 
               onSectionClick={handleDonutSectionClick}
@@ -300,7 +321,7 @@ export default function Mypage() {
           <div style={{ width: 400, height: 300, background: '#fff', borderRadius: 12, padding: 24, boxShadow: '0 1px 4px #0001', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
             <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 24 }}>검색 조건</h2>
             <div style={{ flex: 1, overflowY: 'auto', paddingTop: 8 }}>
-              {inflowData.map((item, idx) => (
+              {funnelData.map((item, idx) => (
                 <div 
                   key={item.label} 
                   style={{ 
