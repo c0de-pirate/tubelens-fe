@@ -2,6 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import SearchBar from '../../components/SearchBar';
 import styled from 'styled-components';
+import Header from "../../components/header";
+
+const PageWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+`;
 
 const SearchPageContainer = styled.div`
   padding: 20px;
@@ -163,42 +170,45 @@ const SearchPage = () => {
   };
 
   return (
-    <SearchPageContainer>
-      <SearchBar initialQuery={searchQuery} />
-      <SearchResults>
-        <h2>검색 결과: {searchQuery}</h2>
-        {loading && <Loading>검색 중...</Loading>}
-        {error && <Error>{error}</Error>}
-        {!loading && !error && videos.length === 0 && (
-          <NoResults>검색 결과가 없습니다.</NoResults>
-        )}
-        {!loading && !error && videos.length > 0 && (
-          <VideoGrid>
-            {videos.map((video) => (
-              <VideoCard 
-                key={video.id}
-                onClick={() => handleVideoClick(video.id)}
-              >
-                <Thumbnail 
-                  src={video.thumbnails} 
-                  alt={video.title} 
-                />
-                <VideoInfo>
-                  <Title>{video.title}</Title>
-                  <ChannelInfo>
-                    <ChannelName>{video.channelTitle}</ChannelName>
-                    <ViewCount>
-                      {formatViewCount(video.viewCount)}
-                    </ViewCount>
-                  </ChannelInfo>
-                </VideoInfo>
-              </VideoCard>
-            ))}
-          </VideoGrid>
-        )}
-      </SearchResults>
-    </SearchPageContainer>
+    <PageWrapper>
+      <Header />
+      <SearchPageContainer>
+        <SearchBar initialQuery={searchQuery} />
+        <SearchResults>
+          <h2>검색 결과: {searchQuery}</h2>
+          {loading && <Loading>검색 중...</Loading>}
+          {error && <Error>{error}</Error>}
+          {!loading && !error && videos.length === 0 && (
+            <NoResults>검색 결과가 없습니다.</NoResults>
+          )}
+          {!loading && !error && videos.length > 0 && (
+            <VideoGrid>
+              {videos.map((video) => (
+                <VideoCard 
+                  key={video.id}
+                  onClick={() => handleVideoClick(video.id)}
+                >
+                  <Thumbnail 
+                    src={video.thumbnails} 
+                    alt={video.title} 
+                  />
+                  <VideoInfo>
+                    <Title>{video.title}</Title>
+                    <ChannelInfo>
+                      <ChannelName>{video.channelTitle}</ChannelName>
+                      <ViewCount>
+                        {formatViewCount(video.viewCount)}
+                      </ViewCount>
+                    </ChannelInfo>
+                  </VideoInfo>
+                </VideoCard>
+              ))}
+            </VideoGrid>
+          )}
+        </SearchResults>
+      </SearchPageContainer>
+    </PageWrapper>
   );
 };
 
-export default SearchPage; 
+export default SearchPage;

@@ -214,6 +214,57 @@ export default function Mypage() {
     }
   };
 
+  async function callapi() {
+    console.log("callapi 호출")
+    const headers = getAuthHeaders();
+  
+    if (!headers) {
+      setLoading(false);
+      return;
+    }
+  
+    try {
+      const response = await api.post('/funnel', {}, { headers });
+      console.log('응답 데이터:', response.data);
+      
+      if (response.data) {
+        // 총 합계 계산
+        const totalViews = Object.values(response.data).reduce((sum, val) => 
+          typeof val === 'number' ? sum + val : sum, 0);
+        
+        console.log('총 조회수:', totalViews); // 디버깅용
+        
+        // 도넛 차트 데이터 업데이트 - 백엔드 키가 이미 프론트엔드 키와 동일함
+        const updatedFunnelData = FUNNEL_KEYS.map((key, idx) => {
+          // 백엔드 응답에서 직접 키 사용
+          const value = totalViews > 0 && response.data[key] !== undefined
+            ? Math.round((response.data[key] / totalViews) * 100)
+            : 0;
+          
+          return {
+            key,
+            label: FUNNEL_LABELS[key],
+            value: value,
+            color: FUNNEL_COLORS[idx]
+          };
+        });
+        
+        setFunnelData(updatedFunnelData);
+        console.log('업데이트된 퍼널 데이터:', updatedFunnelData);
+      }
+    } catch (error) {
+      console.error('퍼널 데이터 가져오기 실패:', error);
+      
+      if (error.response) {
+        console.error('응답 오류:', error.response.status, error.response.data);
+      } else if (error.request) {
+        console.error('요청 오류:', error.request);
+      } else {
+        console.error('기타 오류:', error.message);
+      }
+    }
+  }
+
   // 컴포넌트 마운트 시 초기 데이터 로드
   useEffect(() => {
     // 사용자 정보 가져오기
@@ -221,7 +272,9 @@ export default function Mypage() {
     if (userInfo.name) {
       setUserName(userInfo.name);
     }
-    
+
+    callapi()
+
     fetchTags();
   }, []);
 

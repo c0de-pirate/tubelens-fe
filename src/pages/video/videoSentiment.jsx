@@ -9,12 +9,30 @@ export default function VideoSentiment({ videoId }) {
     negative: 0,
   });
 
+  console.log('컴포넌트 마운트됨, videoId:', videoId); // 추가: videoId 값 확인
+
   useEffect(() => {
-    if (!videoId) return;
-    fetch(`/sentiment/${videoId}`)
-      .then((res) => res.json())
-      .then((data) => setSentiment(data))
-      .catch(() => setSentiment({ positive: 0, neutral: 0, negative: 0 }));
+    console.log('useEffect 실행됨, videoId:', videoId); // 추가: useEffect 내부에서 videoId 확인
+    
+    if (!videoId) {
+      console.log('videoId가 없어서 요청 중단'); // 추가: 조건 체크 로그
+      return;
+    }
+    
+    console.log(`감정분석 요청 시작: /sentiment/${videoId}`);
+    fetch(`/api/sentiment/${videoId}`)
+      .then((res) => {
+        console.log('응답 상태:', res.status);
+        return res.json();
+      })
+      .then((data) => {
+        console.log('수신된 데이터:', data);
+        setSentiment(data);
+      })
+      .catch((error) => {
+        console.error('오류 발생:', error);
+        setSentiment({ positive: 0, neutral: 0, negative: 0 });
+      });
   }, [videoId]);
 
   const total = sentiment.positive + sentiment.neutral + sentiment.negative;

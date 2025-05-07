@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { getVideoData } from './hook';
 import SearchBar from '../../components/SearchBar';
+import Header from "../../components/header";
 
 const VideoInfoBox = () => {
   const { videoId } = useParams();
@@ -43,6 +44,7 @@ const VideoInfoBox = () => {
 
   return (
     <>
+      <Header />
       <SearchBar />
       <div className="flex px-16 py-6 gap-8">
         {/* 메인 비디오 섹션 */}
